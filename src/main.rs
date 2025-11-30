@@ -1,60 +1,91 @@
-use std::{
-    thread::sleep,
-    time::{Duration, Instant},
-};
-
-use rand::{SeedableRng, rngs::StdRng};
-
-use crate::mimetize::{HashMimetize, Mimetize, RngState};
+use crate::mimetize::Mimetize;
 
 mod mimetize;
 
 fn main() {
-    let f = |a: String| {
-        sleep(Duration::from_secs(2));
-        a.len()
+    let f1 = |()| {
+        println!("Hello!");
+
+        true
     };
 
-    let mut m = HashMimetize::new(f);
+    let mut m1 = Mimetize::new(f1);
 
-    let seed = [42; 32];
+    for _ in 0..5 {
+        m1.call(());
+    }
 
-    let mut rng1: RngState<i32> = RngState::new(StdRng::from_seed(seed));
-    let mut rng2 = RngState::new(StdRng::from_seed(seed));
+    let f2 = |x: i32| {
+        static mut Y: i32 = 0;
 
-    assert_eq!(rng1.call(0), rng2.call(0), "Index 0 tem que dar match");
-    assert_eq!(rng1.call(5), rng2.call(5), "Index 5 tem que dar match");
-    assert_eq!(
-        rng1.call(100),
-        rng2.call(100),
-        "Index 100 tem que dar match"
-    );
+        unsafe {
+            Y += x;
+            return Y;
+        }
+    };
 
-    let instant = Instant::now();
-    let x = rng1.call(10000000);
-    println!("{x}");
-    println!(
-        "Tempo chamado para a call 10000000 de rng: {:?}",
-        instant.elapsed()
-    );
+    let mut m2 = Mimetize::new(f2);
 
-    println!("aaa");
+    for i in 0..5 {
+        let y = m2.call(2);
+        println!("i: {i}, Y: {y}")
+    }
+}
 
-    let instant = Instant::now();
-    let x = m.call(String::from("FIJQIFOQWJFOQIWFJWQIFWJQ"));
-    println!("{x}");
-    println!("Tempo chamado primeira call: {:?}", instant.elapsed());
+#[cfg(test)]
+mod test {
 
-    let instant = Instant::now();
-    let x = m.call(String::from("FIJQIFOQWJFOQIWFJWQIFWJQ"));
-    println!("{x}");
-    println!("Tempo chamado segunda call: {:?}", instant.elapsed());
+    use std::thread::sleep;
+    use std::time::Duration;
 
-    let instant = Instant::now();
-    let x = m.call(String::from("aaaaaa"));
-    println!("{x}");
-    println!(
-        "Tempo chamado terceira call com outro argumento: {:?}",
-        instant.elapsed()
-    );
+    use rand::Rng;
+    use rand::SeedableRng;
+    use rand::rng;
+    use rand::rngs::StdRng;
+
+    use crate::mimetize::Mimetize;
+
+    #[test]
+    fn mimetizar_random_sem_seed() {
+        let random = |()| {
+            let mut r = rng();
+            r.random::<i32>()
+        };
+
+        let mut m2 = Mimetize::new(random);
+
+        assert!(m2.call(()) != random(()));
+    }
+
+    #[test]
+    fn mimetizar_random_com_seed() {
+        let seed = [42; 32];
+
+        let random = |seed: [u8; 32]| {
+            let mut r = StdRng::from_seed(seed);
+            r.random::<i32>()
+        };
+
+        let mut m2 = Mimetize::new(random);
+
+        assert_eq!(m2.call(seed), random(seed));
+    }
+
+    #[test]
+    fn mimetizar_funcao_com_sleep() {
+        // Função mimetizada
+        let f = |a: String| {
+            sleep(Duration::from_secs(2));
+            a.len()
+        };
+        // Mimetize
+        let mut m = Mimetize::new(f);
+
+        // Demora 2s
+        let x = m.call(String::from("Argumento"));
+        // Instantâneo
+        let y = m.call(String::from("Argumento"));
+
+        assert_eq!(x, y);
+    }
 }

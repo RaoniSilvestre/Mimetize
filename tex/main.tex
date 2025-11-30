@@ -1,0 +1,234 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage[a4paper,top=2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{listings}
+\usepackage{xcolor} 
+\usepackage{enumitem}
+\usepackage{csquotes}
+\usepackage[backend=biber,style=authoryear]{biblatex}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{booktabs} 
+\usepackage{siunitx}  
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+
+
+\lstdefinelanguage{Rust}{
+  sensitive=true,
+  morekeywords={fn, let, mut, if, else, while, loop, for, in, match, return, impl, struct, enum, pub, use, mod, crate, super, self, Self, type, where, trait, true, false},
+  keywordstyle=\color{violet}\bfseries,
+  morekeywords=[2]{String, Vec, Option, Result, Box, u8, u32, i32, f64, usize, bool, str},
+  keywordstyle=[2]\color{blue}\bfseries,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{teal},
+  morestring=[b]",
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  showstringspaces=false,
+  frame=single, 
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  tabsize=4,
+  % --- THE FIX FOR UTF-8 ERRORS ---
+  inputencoding=utf8,
+  extendedchars=true,
+  literate=
+  {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+  {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+  {à}{{\`a}}1 {è}{{\`e}}1 {ì}{{\`i}}1 {ò}{{\`o}}1 {ù}{{\`u}}1
+  {À}{{\`A}}1 {È}{{\'E}}1 {Ì}{{\`I}}1 {Ò}{{\`O}}1 {Ù}{{\`U}}1
+  {ä}{{\"a}}1 {ë}{{\"e}}1 {ï}{{\"i}}1 {ö}{{\"o}}1 {ü}{{\"u}}1
+  {Ä}{{\"A}}1 {Ë}{{\"E}}1 {Ï}{{\"I}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1
+  {â}{{\^a}}1 {ê}{{\^e}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {û}{{\^u}}1
+  {Â}{{\^A}}1 {Ê}{{\^E}}1 {Î}{{\^I}}1 {Ô}{{\^O}}1 {Û}{{\^U}}1
+  {ã}{{\~a}}1 {ẽ}{{\~e}}1 {ĩ}{{\~i}}1 {õ}{{\~o}}1 {ũ}{{\~u}}1
+  {Ã}{{\~A}}1 {Ẽ}{{\~E}}1 {Ĩ}{{\~I}}1 {Õ}{{\~O}}1 {Ũ}{{\~U}}1
+  {œ}{{\oe}}1 {Œ}{{\OE}}1 {æ}{{\ae}}1 {Æ}{{\AE}}1 {ß}{{\ss}}1
+  {ű}{{\H{u}}}1 {Ű}{{\H{U}}}1 {ő}{{\H{o}}}1 {Ő}{{\H{O}}}1
+  {ç}{{\c c}}1 {Ç}{{\c C}}1 {ø}{{\o}}1 {å}{{\r a}}1 {Å}{{\r A}}1
+  {€}{{\euro}}1 {£}{{\pounds}}1 {«}{{\guillemotleft}}1
+  {»}{{\guillemotright}}1 {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {¿}{{?`}}1
+}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red},
+    commentstyle=\color{gray},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    breaklines=true,
+    tabsize=4,
+    showstringspaces=false,
+}
+
+
+\title{Atividade prática 2}
+
+\author{Raoni Silva}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\noindent Turma de Estruturas Algébricas 25T56 \\ Unidade 2
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Implementação de \texttt{Mimetize}}
+
+A implementação foi feita na linguagem de programação \texttt{Rust}, utilizando uma classe que guarda um hashmap de entradas e saídas e uma função. No seguinte formato:
+
+
+\begin{lstlisting}[language=Rust, caption={Definição de HashMimetize}]
+pub struct Mimetize<I: Hashable, O, F: Fn(I) -> O> {
+    args: HashMap<I, O>,
+    f: Box<F>,
+}
+\end{lstlisting}
+
+Para atender a requisição de chamar a função apenas uma vez, para utilizar a função interna de Mimetize, é necessário utilizar o método \texttt{.call()}.
+Com isso, é possível adicionar a lógica de "salvar o resultado" da função interna antes de chamar ela de fato.
+
+
+\begin{lstlisting}[language=Rust, caption={Como chamar a função de HashMimetize}]
+fn call(&mut self, i: I) -> O {
+    // Busca o resultado no HashMap.
+    match self.args.get(&i) {
+        // Caso não tenha o resultado, chama f com o argumento, e insere no HashMap. 
+        None => {
+            let res = (self.f)(i.clone());
+            self.args.insert(i, res.clone());
+            return res;
+        }
+        // Caso já tenha o resultado salvo, apenas retorna ele.
+        Some(o) => o.clone(),
+    }
+}
+\end{lstlisting}
+
+A partir desse resultado, é possível utilizar a \texttt{HashMimetize} da seguinte forma: 
+
+\begin{lstlisting}[language=Rust, caption={Como utilizar a HashMimetize}]
+fn call(&mut self, i: I) -> O {
+    // Função mimetizada
+    let f = |a: String| {
+        sleep(Duration::from_secs(2));
+        a.len()
+    };
+    // Mimetize
+    let mut m = HashMimetize::new(f);
+
+    // Demora 2s
+    let x = m.call(String::from("Argumento"));
+    // Instantâneo
+    let y = m.call(String::from("Argumento"));
+}
+\end{lstlisting}
+
+\subsection{Relação com categorias}
+
+A partir dessa implementação, o que se pode observar sobre a \texttt{HashMimetize}, é que ela mantém a assinatura de $f: I -> O$. E além disso,
+ela mantém as mesmas entradas e saídas, apesar de ter implementações diferentes. Logo, temos que f e mimetize(f) são o mesmo morfismo na categoria dos tipos.
+
+$$mimetize(f) = f$$
+
+
+\section{Mimetizar a random()}
+
+O segundo tópico pedido foi para mimetizar a função $random: Unit -> T$ padrão da linguagem. O jeito de implementar isso é o seguinte: 
+
+\begin{lstlisting}[language=Rust, caption={Mimetizar a random()}]
+fn call(&mut self, i: I) -> O {
+    let random = |()| {
+        let mut r = rng();
+        r.random::<i32>()
+    };
+
+    let mut m2 = HashMimetize::new(random);
+
+    // Assert falha
+    assert_eq!(m2.call(()), random(()));
+}
+\end{lstlisting}
+
+Isso demonstra que a mimetização não mantém a igualdade entre morfismos para funções aleatórias.
+
+Do ponto de vista da teoria das categorias, a falha ocorre devido a uma incompatibilidade na definição do domínio do morfismo.
+A função \texttt{mimetize} assume que o argumento $f$ é um morfismo puro, onde para um dado objeto de entrada $A$, existe um único objeto de saída $B$. Ou seja, ela enxerga a função como:
+$$ f: Unit \to T $$
+
+No entanto, a função \texttt{random()} depende implicitamente de um estado externo (a \textit{seed} ou o estado do gerador). Para modelar corretamente esse comportamento em uma categoria de funções puras, precisamos explicitar esse estado no domínio e no codomínio. O morfismo real seria algo como:
+$$ f_{real}: Unit \times World \to T \times World $$
+
+Onde $World$ representa o estado do universo (ou do gerador de números aleatórios) no momento da execução.
+
+Como a função \texttt{mimetize} ignora o objeto $World$ e fixa o resultado baseada apenas na entrada $1$ (que é constante), ela "congela" o estado do mundo no momento da primeira execução ($w_0$). 
+
+\subsection{Utilizando uma seed}
+
+Ao utilizar uma seed, é como se utilizassemos o objeto $World$ como entrada, garantindo que a saída será consistente. Traduzindo para o código, é equivalente a: 
+
+
+\begin{lstlisting}[language=Rust, caption={Mimetizar a random() corretamente}]
+fn call(&mut self, i: I) -> O {
+    let random = |seed: [u8; 32]| {
+        let mut r = StdRng::from_seed(seed);
+        r.random::<i32>()
+    };
+
+    let mut m2 = HashMimetize::new(random);
+
+    // Assert passa
+    assert_eq!(m2.call(seed), random(seed));
+}
+\end{lstlisting}
+
+Observando sob o ponto de vista das categorias, estamos sendo honestos no nosso morfismo agora, definindo ele como $Seed \to T$. 
+
+\section{Mimetizando funções com side-effects}
+
+Essas duas funções, em rust, foram declaradas da seguinte forma:
+
+\begin{lstlisting}[language=Rust, caption={Funções com side-effects}]
+let f1 = |()| {
+    println!("Hello!");
+    true
+};
+
+let f2 = |x: i32| {
+    static mut Y: i32 = 0;
+
+    unsafe {
+        Y += x;
+        return Y;
+    }
+};
+\end{lstlisting}
+
+Quando a primeira foi mimetizada, observou-se que mesmo chamando ela várias vezes, o side-effect só é ativado uma vez, pois só tem um jeito de chamar a função.
+
+No caso da segunda função, o side-effect é chamado sempre que uma entrada diferente ocorre, ou seja, se for executado f2(5) N vezes, o resultado será o mesmo. Mas caso seja chamado f2(1), f2(2)... O valor na saída sempre vai mudar. Isso ocorre de forma similar a função random(), pois categoricamente, é como se essas funções estivessem ocultando parte da assinatura ($f1: (Unit \times World \to Bool \times World$), exibindo apenas parte de seu funcionamento.
+
+
+\section{Void-Bool Cat}
+
+Como pedido, a categoria definida pelos objetos Void e Bool e seus morfismos.
+
+\includegraphics[width=0.9\textwidth]{images/void-bool-cat.png}
+
+\end{document}
